@@ -205,8 +205,8 @@ export class Fmt {
      * ```json
      * {
      *  pad: false,
-     *  lineBreakStart: true,
-     *  lineBreakEnd: true,
+     *  lineBreakStart: false,
+     *  lineBreakEnd: false,
      *  jsonSpacer: 2
      * }
      * ```
@@ -215,8 +215,8 @@ export class Fmt {
      * ```json
      * {
      *  pad: false,
-     *  lineBreakStart: false,
-     *  lineBreakEnd: false,
+     *  lineBreakStart: true,
+     *  lineBreakEnd: true,
      *  jsonSpacer: 2
      * }
      * ```
@@ -234,8 +234,8 @@ export class Fmt {
      * ```json
      * {
      *  pad: false,
-     *  lineBreakStart: true,
-     *  lineBreakEnd: true,
+     *  lineBreakStart: false,
+     *  lineBreakEnd: false,
      *  jsonSpacer: 2
      * }
      * ```
@@ -244,8 +244,8 @@ export class Fmt {
      * ```json
      * {
      *  pad: false,
-     *  lineBreakStart: false,
-     *  lineBreakEnd: false,
+     *  lineBreakStart: true,
+     *  lineBreakEnd: true,
      *  jsonSpacer: 2
      * }
      * ```
@@ -264,8 +264,8 @@ export class Fmt {
      * ```json
      * {
      *  pad: false,
-     *  lineBreakStart: true,
-     *  lineBreakEnd: true,
+     *  lineBreakStart: false,
+     *  lineBreakEnd: false,
      *  jsonSpacer: 2
      * }
      * ```
@@ -274,8 +274,8 @@ export class Fmt {
      * ```json
      * {
      *  pad: false,
-     *  lineBreakStart: false,
-     *  lineBreakEnd: false,
+     *  lineBreakStart: true,
+     *  lineBreakEnd: true,
      *  jsonSpacer: 2
      * }
      * ```
