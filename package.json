@@ -1,6 +1,6 @@
 {
     "name": "@c_lesi/logger",
-    "version": "1.0.1",
+    "version": "1.1.1",
     "author": "c_lesi",
     "main": "dist/index.js",
     "scripts": {

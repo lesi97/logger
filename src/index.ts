@@ -45,6 +45,8 @@ type LogMethod =
     | 'table'
     | 'assert';
 
+type CustomLogMethod = 'success';
+
 export class Fmt {
     private isBrowser = typeof window !== 'undefined';
     private ansiText = {
@@ -102,7 +104,7 @@ export class Fmt {
         }
     }
 
-    private getFormatting(type: LogMethod) {
+    private getFormatting(type: LogMethod | CustomLogMethod) {
         const formattingServer = {
             log: this.ansiText.WHITE,
             info: this.ansiText.BLUE,
@@ -112,7 +114,7 @@ export class Fmt {
             trace: this.ansiText.BLUE,
             table: this.ansiText.GREEN,
             assert: this.ansiText.WHITE,
-            custom: '',
+            success: this.ansiText.GREEN,
         };
 
         const formattingClient = {
@@ -122,9 +124,9 @@ export class Fmt {
             error: '',
             debug: 'color: magenta;',
             trace: 'color: cyan;',
-            table: 'color: green;',
+            table: 'color: lime;',
             assert: '',
-            custom: '',
+            success: 'color: lime',
         };
 
         return {
@@ -133,7 +135,11 @@ export class Fmt {
         };
     }
 
-    private write(type: LogMethod, args: Printable[]) {
+    private write(
+        type: LogMethod,
+        args: Printable[],
+        customType?: CustomLogMethod
+    ) {
         let options: Partial<LogOptionsType> = {};
         let messages: Printable[] = args;
 
@@ -159,7 +165,7 @@ export class Fmt {
             jsonSpacer,
         } = options;
 
-        const { server, client } = this.getFormatting(type);
+        const { server, client } = this.getFormatting(customType ?? type);
 
         const padMessage = pad ? ' ' : '';
         const formattedMessages = messages.map((message) =>
@@ -177,7 +183,7 @@ export class Fmt {
                 : console.log(...args);
 
         if (this.isBrowser) {
-            method(`%c${output}${lineBreakEnd && '\n'}`, client);
+            method(`%c${output}${lineBreakEnd ? '\n' : ''}`, client);
         } else {
             let fullMessage = `${
                 lineBreakStart ? '\n' : ''
@@ -196,6 +202,36 @@ export class Fmt {
      */
     log(...args: Printable[]) {
         this.write('log', args);
+    }
+
+    /**
+     * Logs to the console with green text
+     *
+     * @param {...Printable[]} args Values to be printed to the console
+     * @defaults_client
+     * ```json
+     * {
+     *  pad: false,
+     *  lineBreakStart: false,
+     *  lineBreakEnd: false,
+     *  jsonSpacer: 2
+     * }
+     * ```
+     *
+     * @defaults_server
+     * ```json
+     * {
+     *  pad: false,
+     *  lineBreakStart: true,
+     *  lineBreakEnd: true,
+     *  jsonSpacer: 2
+     * }
+     * ```
+     *
+     * @see {@link https://npm.lesi.dev/-/web/detail/@c_lesi/better-logger Read the docs}
+     */
+    success(...args: Printable[]) {
+        this.write('log', args, 'success');
     }
 
     /**
