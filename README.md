@@ -2,6 +2,9 @@
 
 Custom `console.fmt` logger with formatted output and styling
 
+-   [Github](https://github.com/lesi97/logger)
+-   [Registry](https://npm.lesi.dev/-/web/detail/@c_lesi/logger)
+
 ## Installation
 
 This package is self hosted so you must add a registry in your `.npmrc` file first

@@ -289,7 +289,7 @@ export class Fmt {
     }
 
     /**
-     * @see {@link https://npm.lesi.dev.dev/@c_lesi/better-logger Read the docs}
+     * @see {@link https://npm.lesi.dev/-/web/detail/@c_lesi/logger Read the docs}
      */
     log(...args: Printable[]) {
         this.write('log', args);
@@ -319,7 +319,7 @@ export class Fmt {
      * }
      * ```
      *
-     * @see {@link https://npm.lesi.dev/-/web/detail/@c_lesi/better-logger Read the docs}
+     * @see {@link https://npm.lesi.dev/-/web/detail/@c_lesi/logger Read the docs}
      */
     success(...args: Printable[]) {
         this.write('log', args, 'success');
@@ -348,7 +348,7 @@ export class Fmt {
      * }
      * ```
      *
-     * @see {@link https://npm.lesi.dev/-/web/detail/@c_lesi/better-logger Read the docs}
+     * @see {@link https://npm.lesi.dev/-/web/detail/@c_lesi/logger Read the docs}
      */
     info(...args: Printable[]) {
         this.write('info', args);
@@ -377,7 +377,7 @@ export class Fmt {
      * }
      * ```
      *
-     * @see {@link https://npm.lesi.dev/-/web/detail/@c_lesi/better-logger Read the docs}
+     * @see {@link https://npm.lesi.dev/-/web/detail/@c_lesi/logger Read the docs}
      */
     warn(...args: Printable[]) {
         this.write('warn', args);
@@ -407,7 +407,7 @@ export class Fmt {
      * }
      * ```
      *
-     * @see {@link https://npm.lesi.dev/-/web/detail/@c_lesi/better-logger Read the docs}
+     * @see {@link https://npm.lesi.dev/-/web/detail/@c_lesi/logger Read the docs}
      */
     error(...args: Printable[]) {
         this.write('error', args);
@@ -491,7 +491,7 @@ export class Fmt {
      * - LIGHT_CYAN
      * - LIGHT_WHITE
      *
-     * @see {@link https://npm.lesi.dev/-/web/detail/@c_lesi/better-logger Read the docs}
+     * @see {@link https://npm.lesi.dev/-/web/detail/@c_lesi/logger Read the docs}
      */
     custom(...args: Printable[]) {
         this.write('log', args, 'custom');
