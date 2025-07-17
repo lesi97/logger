@@ -4,22 +4,14 @@ declare global {
     }
 }
 
-export type LogOptionsType = {
-    type: keyof Console;
-    lineBreakStart: boolean;
-    lineBreakEnd: boolean;
-    pad: boolean;
-    jsonSpacer: number;
-};
-
 export type CustomLogOptionsType = {
     type: keyof Console;
     lineBreakStart: boolean;
     lineBreakEnd: boolean;
-    pad: boolean;
-    jsonSpacer: boolean;
-    bg: keyof Fmt['ansiBackground'];
-    text: keyof Fmt['ansiText'];
+    padMessage: boolean;
+    jsonSpacer: number;
+    backgroundValue: keyof Fmt['ansiBackground'] | string;
+    textValue: keyof Fmt['ansiText'] | string;
 };
 
 export type Printable =
@@ -45,7 +37,7 @@ type LogMethod =
     | 'table'
     | 'assert';
 
-type CustomLogMethod = 'success';
+type CustomLogMethod = 'success' | 'custom';
 
 export class Fmt {
     private isBrowser = typeof window !== 'undefined';
@@ -56,7 +48,17 @@ export class Fmt {
         YELLOW: '\x1b[33m',
         BLUE: '\x1b[34m',
         MAGENTA: '\x1b[35m',
+        CYAN: '\x1b[36m',
         WHITE: '\x1b[37m',
+        LIGHT_GRAY: '\x1b[37m',
+        DARK_GRAY: '\x1b[90m',
+        LIGHT_RED: '\x1b[91m',
+        LIGHT_GREEN: '\x1b[92m',
+        LIGHT_YELLOW: '\x1b[93m',
+        LIGHT_BLUE: '\x1b[94m',
+        LIGHT_MAGENTA: '\x1b[95m',
+        LIGHT_CYAN: '\x1b[96m',
+        LIGHT_WHITE: '\x1b[97m',
     };
     private ansiBackground = {
         BLACK: '\x1b[40m',
@@ -67,6 +69,13 @@ export class Fmt {
         MAGENTA: '\x1b[45m',
         CYAN: '\x1b[46m',
         WHITE: '\x1b[47m',
+        LIGHT_RED: '\x1b[48;5;196m',
+        LIGHT_GREEN: '\x1b[48;5;46m',
+        LIGHT_YELLOW: '\x1b[48;5;226m',
+        LIGHT_BLUE: '\x1b[48;5;39m',
+        LIGHT_MAGENTA: '\x1b[48;5;201m',
+        LIGHT_CYAN: '\x1b[48;5;51m',
+        LIGHT_WHITE: '\x1b[48;5;15m',
     };
     private RESET = '\x1b[0m';
 
@@ -80,6 +89,13 @@ export class Fmt {
             MAGENTA: '#FF00FF',
             CYAN: '#00FFFF',
             WHITE: '#FFFFFF',
+            LIGHT_RED: '#FF6347',
+            LIGHT_GREEN: '#90EE90',
+            LIGHT_YELLOW: '#FFFFE0',
+            LIGHT_BLUE: '#ADD8E6',
+            LIGHT_MAGENTA: '#DDA0DD',
+            LIGHT_CYAN: '#E0FFFF',
+            LIGHT_WHITE: '#F8F8FF',
         };
 
         return map[colour] ?? '#000000';
@@ -115,6 +131,7 @@ export class Fmt {
             table: this.ansiText.GREEN,
             assert: this.ansiText.WHITE,
             success: this.ansiText.GREEN,
+            custom: '',
         };
 
         const formattingClient = {
@@ -127,6 +144,7 @@ export class Fmt {
             table: 'color: lime;',
             assert: '',
             success: 'color: lime',
+            custom: '',
         };
 
         return {
@@ -135,12 +153,76 @@ export class Fmt {
         };
     }
 
+    private getCustomFormatting(options: Partial<CustomLogOptionsType>) {
+        const colours = {} as Partial<CustomLogOptionsType>;
+        if (options.backgroundValue) {
+            colours.backgroundValue = options.backgroundValue;
+        }
+        if (options.textValue) {
+            colours.textValue = options.textValue;
+        }
+        const server = Object.entries(colours)
+            .map(([key, value]) => {
+                const stringValue = value as string;
+                if (key === 'backgroundValue') {
+                    const typedValue =
+                        stringValue.toUpperCase() as keyof Fmt['ansiBackground'];
+                    const formattedValue = stringValue
+                        .toLowerCase()
+                        .startsWith('\\x1b')
+                        ? stringValue
+                        : this.ansiBackground[typedValue];
+                    return formattedValue;
+                }
+                if (key === 'textValue') {
+                    const typedValue =
+                        stringValue.toUpperCase() as keyof Fmt['ansiText'];
+                    const formattedValue = stringValue
+                        .toLowerCase()
+                        .startsWith('\\x1b')
+                        ? stringValue
+                        : this.ansiText[typedValue];
+                    return formattedValue;
+                }
+            })
+            .join(' ');
+        const client = Object.entries(colours)
+            .map(([key, value]) => {
+                const stringValue = value as string;
+                if (key === 'backgroundValue') {
+                    const typedValue =
+                        stringValue.toUpperCase() as keyof Fmt['ansiBackground'];
+                    const formattedValue =
+                        stringValue.startsWith('#') ||
+                        stringValue.toLowerCase().startsWith('rgb')
+                            ? stringValue
+                            : this.ansiToHex(typedValue);
+                    return `background-color:${formattedValue}`;
+                }
+                if (key === 'textValue') {
+                    const typedValue =
+                        stringValue.toUpperCase() as keyof Fmt['ansiBackground'];
+                    const formattedValue =
+                        stringValue.startsWith('#') ||
+                        stringValue.toLowerCase().startsWith('rgb')
+                            ? stringValue
+                            : this.ansiToHex(typedValue);
+                    return `color:${formattedValue}`;
+                }
+            })
+            .join(';');
+        return {
+            server: server ?? this.ansiText.WHITE,
+            client: client ?? '',
+        };
+    }
+
     private write(
         type: LogMethod,
         args: Printable[],
         customType?: CustomLogMethod
     ) {
-        let options: Partial<LogOptionsType> = {};
+        let options: Partial<CustomLogOptionsType> = {};
         let messages: Printable[] = args;
 
         const lastArg = args[args.length - 1];
@@ -149,25 +231,30 @@ export class Fmt {
             !Array.isArray(lastArg) &&
             lastArg !== null &&
             ('type' in lastArg ||
-                'pad' in lastArg ||
+                'padMessage' in lastArg ||
                 'lineBreakStart' in lastArg ||
                 'lineBreakEnd' in lastArg ||
-                'jsonSpacer' in lastArg)
+                'jsonSpacer' in lastArg ||
+                'backgroundValue' in lastArg ||
+                'textValue' in lastArg)
         ) {
-            options = lastArg as Partial<LogOptionsType>;
+            options = lastArg as Partial<CustomLogOptionsType>;
             messages = args.slice(0, -1);
         }
 
         const {
-            pad = false,
+            padMessage = false,
             lineBreakStart = this.isBrowser ? false : true,
             lineBreakEnd = this.isBrowser ? false : true,
             jsonSpacer,
         } = options;
 
-        const { server, client } = this.getFormatting(customType ?? type);
+        const { server, client } =
+            customType && customType === 'custom'
+                ? this.getCustomFormatting(options)
+                : this.getFormatting(customType ?? type);
 
-        const padMessage = pad ? ' ' : '';
+        const padMessageMessage = padMessage ? ' ' : '';
         const formattedMessages = messages.map((message) =>
             this.stringify(message, jsonSpacer)
         );
@@ -175,7 +262,9 @@ export class Fmt {
 
         const output = `${
             lineBreakStart ? '\n' : ''
-        }${padMessage}${joinedMessage}${padMessage}${lineBreakEnd ? '\n' : ''}`;
+        }${padMessageMessage}${joinedMessage}${padMessageMessage}${
+            lineBreakEnd ? '\n' : ''
+        }`;
 
         const method = (...args: any[]) =>
             typeof console[type] === 'function'
@@ -187,7 +276,9 @@ export class Fmt {
         } else {
             let fullMessage = `${
                 lineBreakStart ? '\n' : ''
-            }${server}${padMessage}${joinedMessage}${padMessage}${this.RESET}`;
+            }${server}${padMessageMessage}${joinedMessage}${padMessageMessage}${
+                this.RESET
+            }`;
 
             if (lineBreakEnd) {
                 fullMessage += '\n';
@@ -211,7 +302,7 @@ export class Fmt {
      * @defaults_client
      * ```json
      * {
-     *  pad: false,
+     *  padMessage: false,
      *  lineBreakStart: false,
      *  lineBreakEnd: false,
      *  jsonSpacer: 2
@@ -221,7 +312,7 @@ export class Fmt {
      * @defaults_server
      * ```json
      * {
-     *  pad: false,
+     *  padMessage: false,
      *  lineBreakStart: true,
      *  lineBreakEnd: true,
      *  jsonSpacer: 2
@@ -240,7 +331,7 @@ export class Fmt {
      * @defaults_client
      * ```json
      * {
-     *  pad: false,
+     *  padMessage: false,
      *  lineBreakStart: false,
      *  lineBreakEnd: false,
      *  jsonSpacer: 2
@@ -250,7 +341,7 @@ export class Fmt {
      * @defaults_server
      * ```json
      * {
-     *  pad: false,
+     *  padMessage: false,
      *  lineBreakStart: true,
      *  lineBreakEnd: true,
      *  jsonSpacer: 2
@@ -269,7 +360,7 @@ export class Fmt {
      * @defaults_client
      * ```json
      * {
-     *  pad: false,
+     *  padMessage: false,
      *  lineBreakStart: false,
      *  lineBreakEnd: false,
      *  jsonSpacer: 2
@@ -279,7 +370,7 @@ export class Fmt {
      * @defaults_server
      * ```json
      * {
-     *  pad: false,
+     *  padMessage: false,
      *  lineBreakStart: true,
      *  lineBreakEnd: true,
      *  jsonSpacer: 2
@@ -299,7 +390,7 @@ export class Fmt {
      * @defaults_client
      * ```json
      * {
-     *  pad: false,
+     *  padMessage: false,
      *  lineBreakStart: false,
      *  lineBreakEnd: false,
      *  jsonSpacer: 2
@@ -309,7 +400,7 @@ export class Fmt {
      * @defaults_server
      * ```json
      * {
-     *  pad: false,
+     *  padMessage: false,
      *  lineBreakStart: true,
      *  lineBreakEnd: true,
      *  jsonSpacer: 2
@@ -320,6 +411,90 @@ export class Fmt {
      */
     error(...args: Printable[]) {
         this.write('error', args);
+    }
+
+    /**
+     * Logs to the console with custom colours
+     *
+     * Client side logs accept hex/rgb values or a pre-defined variable code
+     *
+     * Server side logs accept ansi character codes or a pre-defined variable code
+     *
+     * @param {...Printable[]} args Values to be printed to the console
+     * @defaults_client
+     * ```json
+     * {
+     *  padMessage: false,
+     *  lineBreakStart: false,
+     *  lineBreakEnd: false,
+     *  jsonSpacer: 2,
+     * }
+     * ```
+     * @additional_client_params
+     * ```json
+     * {
+     *  backgroundValue: string | keyof Fmt['ansiBackground'],
+     *  text: string | keyof Fmt['ansiText'],
+     * }
+     * ```
+     *
+     * @defaults_server
+     * ```json
+     * {
+     *  padMessage: false,
+     *  lineBreakStart: true,
+     *  lineBreakEnd: true,
+     *  jsonSpacer: 2,
+     * }
+     * ```
+     * @additional_server_params
+     * ```json
+     * {
+     *  backgroundValue: keyof Fmt['ansiBackground'],
+     *  text: keyof Fmt['ansiText'],
+     * }
+     * ```
+     *
+     *  Text Colors:
+     * - BLACK
+     * - RED
+     * - GREEN
+     * - YELLOW
+     * - BLUE
+     * - MAGENTA
+     * - CYAN
+     * - WHITE
+     * - LIGHT_GRAY
+     * - DARK_GRAY
+     * - LIGHT_RED
+     * - LIGHT_GREEN
+     * - LIGHT_YELLOW
+     * - LIGHT_BLUE
+     * - LIGHT_MAGENTA
+     * - LIGHT_CYAN
+     * - LIGHT_WHITE
+     *
+     * Background Colors:
+     * - BLACK
+     * - RED
+     * - GREEN
+     * - YELLOW
+     * - BLUE
+     * - MAGENTA
+     * - CYAN
+     * - WHITE
+     * - LIGHT_RED
+     * - LIGHT_GREEN
+     * - LIGHT_YELLOW
+     * - LIGHT_BLUE
+     * - LIGHT_MAGENTA
+     * - LIGHT_CYAN
+     * - LIGHT_WHITE
+     *
+     * @see {@link https://npm.lesi.dev/-/web/detail/@c_lesi/better-logger Read the docs}
+     */
+    custom(...args: Printable[]) {
+        this.write('log', args, 'custom');
     }
 }
 
